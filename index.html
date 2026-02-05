@@ -28,12 +28,14 @@
             <!-- Setup Section -->
             <div id="setup-section" class="space-y-4">
                 <div class="p-4 bg-blue-50 border border-blue-100 rounded-xl text-[11px] text-blue-800 leading-relaxed">
-                    <p class="font-bold mb-1 underline">設定ガイド:</p>
-                    <ol class="list-decimal ml-4">
-                        <li>Google Cloud ConsoleでAPIキーとOAuthクライアントID(ウェブ)を取得。</li>
-                        <li>承認済みのJavaScript生成元に現在のURLを追加。</li>
-                        <li>フォルダIDはURLの末尾（folders/の後の文字列）です。</li>
-                        <li class="text-red-600 font-bold">GitHub PagesのURLが出ない場合: Settings > PagesでBranchを「main」にしてSaveを押し、数分待ってください。</li>
+                    <p class="font-bold mb-1 underline">設定ガイド (GitHub用):</p>
+                    <ol class="list-decimal ml-4 space-y-1">
+                        <li>Google Cloud ConsoleでAPIキーとOAuthクライアントIDを取得。</li>
+                        <li>
+                            <span class="text-blue-700 font-bold">承認済みのJavaScript生成元</span> には以下を入力：<br>
+                            <code class="bg-white px-1 border rounded text-red-600">https://konosukeokazaki-eng.github.io</code>
+                        </li>
+                        <li>フォルダIDはGoogleドライブでフォルダを開いたURL末尾の英数字です。</li>
                     </ol>
                 </div>
                 <input type="password" id="api-key" placeholder="API Key" class="w-full p-3 border rounded-lg text-sm">
