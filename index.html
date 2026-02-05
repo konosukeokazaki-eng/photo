@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Drive Photo Uploader</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- 新しい認証ライブラリ (Identity Services) と GAPI -->
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="https://apis.google.com/js/api.js" async defer></script>
     <style>
@@ -16,26 +15,19 @@
 <body class="min-h-screen flex flex-col items-center p-4">
 
     <div class="w-full max-w-md bg-white rounded-3xl shadow-xl overflow-hidden mt-8">
-        <!-- Header -->
         <div class="bg-blue-600 p-6 text-white text-center">
             <h1 class="text-xl font-bold">Photo to Drive</h1>
             <p class="text-sm opacity-80">Googleドライブ直接送信</p>
         </div>
 
-        <!-- Main Content -->
         <div class="p-6 space-y-6">
-            
-            <!-- Setup Section -->
             <div id="setup-section" class="space-y-4">
                 <div class="p-4 bg-blue-50 border border-blue-100 rounded-xl text-[11px] text-blue-800 leading-relaxed">
-                    <p class="font-bold mb-1 underline">設定ガイド (GitHub用):</p>
+                    <p class="font-bold mb-1 underline">File Not Found エラーの場合:</p>
                     <ol class="list-decimal ml-4 space-y-1">
-                        <li>Google Cloud ConsoleでAPIキーとOAuthクライアントIDを取得。</li>
-                        <li>
-                            <span class="text-blue-700 font-bold">承認済みのJavaScript生成元</span> には以下を入力：<br>
-                            <code class="bg-white px-1 border rounded text-red-600">https://konosukeokazaki-eng.github.io</code>
-                        </li>
-                        <li>フォルダIDはGoogleドライブでフォルダを開いたURL末尾の英数字です。</li>
+                        <li>フォルダIDが <code class="bg-white px-1 border rounded text-red-600">19ebGiUvNB5m2R-HJyGElFLXFALeJNbrN</code> だけであることを確認。</li>
+                        <li>ログインするアカウントが、そのフォルダの編集権限を持っているか確認。</li>
+                        <li>認証時に表示されるチェックボックス（Googleドライブへのアクセス許可）をすべてオンにしてください。</li>
                     </ol>
                 </div>
                 <input type="password" id="api-key" placeholder="API Key" class="w-full p-3 border rounded-lg text-sm">
@@ -46,9 +38,8 @@
                 </button>
             </div>
 
-            <!-- Upload Section (Hidden until Auth) -->
             <div id="upload-section" class="hidden space-y-6 text-center">
-                <div class="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-2xl p-8 bg-gray-50" id="drop-area">
+                <div class="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-2xl p-8 bg-gray-50">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-gray-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812-1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -58,69 +49,46 @@
                         <input type="file" id="file-input" accept="image/*" capture="environment" class="hidden">
                     </label>
                 </div>
-
                 <div id="status-area" class="text-sm font-medium text-gray-600 h-5"></div>
-                
                 <div id="progress-container" class="hidden w-full bg-gray-200 rounded-full h-3">
                     <div id="progress-bar" class="bg-blue-600 h-3 rounded-full transition-all duration-300" style="width: 0%"></div>
                 </div>
-
                 <div id="preview-container" class="hidden flex justify-center mt-4">
                     <img id="preview-img" class="h-48 rounded-xl shadow-lg border-2 border-white">
                 </div>
-
                 <button id="logout-btn" class="text-xs text-gray-400 underline">設定をリセット</button>
             </div>
-        </div>
-
-        <div class="bg-gray-50 p-4 border-t text-[10px] text-gray-400 text-center">
-            OAuth 2.0 Identity Services対応版<br>
-            大量のファイルがあるアカウントでも安定してアップロード可能です。
         </div>
     </div>
 
     <script>
         let accessToken = null;
         let tokenClient;
-        
-        const SCOPES = 'https://www.googleapis.com/auth/drive.file';
+        // スコープをより確実なものに変更
+        const SCOPES = 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.install';
 
-        // DOM Elements
-        const setupSection = document.getElementById('setup-section');
-        const uploadSection = document.getElementById('upload-section');
-        const fileInput = document.getElementById('file-input');
-        const statusArea = document.getElementById('status-area');
-        const progressBar = document.getElementById('progress-bar');
-        const progressContainer = document.getElementById('progress-container');
-        const previewImg = document.getElementById('preview-img');
-        const previewContainer = document.getElementById('preview-container');
-
-        // LocalStorageから設定を復元
         window.onload = () => {
             document.getElementById('api-key').value = localStorage.getItem('drive_api_key') || '';
             document.getElementById('client-id').value = localStorage.getItem('drive_client_id') || '';
             document.getElementById('folder-id').value = localStorage.getItem('drive_folder_id') || '';
             
-            // ライブラリのロード待ち
             const checkLibs = setInterval(() => {
                 if (typeof gapi !== 'undefined' && typeof google !== 'undefined') {
                     clearInterval(checkLibs);
-                    gapi.load('client', initGapiClient);
+                    gapi.load('client', async () => {
+                        await gapi.client.init({
+                            apiKey: localStorage.getItem('drive_api_key'),
+                            discoveryDocs: ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"],
+                        });
+                    });
                 }
             }, 500);
         };
 
-        async function initGapiClient() {
-            await gapi.client.init({
-                apiKey: localStorage.getItem('drive_api_key'),
-                discoveryDocs: ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"],
-            });
-        }
-
         document.getElementById('save-auth-btn').onclick = () => {
-            const apiKey = document.getElementById('api-key').value;
-            const clientId = document.getElementById('client-id').value;
-            const folderId = document.getElementById('folder-id').value;
+            const apiKey = document.getElementById('api-key').value.trim();
+            const clientId = document.getElementById('client-id').value.trim();
+            const folderId = document.getElementById('folder-id').value.trim();
 
             if (!apiKey || !clientId || !folderId) {
                 alert("すべての項目を入力してください");
@@ -131,58 +99,40 @@
             localStorage.setItem('drive_client_id', clientId);
             localStorage.setItem('drive_folder_id', folderId);
 
-            startAuth();
-        };
-
-        function startAuth() {
             tokenClient = google.accounts.oauth2.initTokenClient({
-                client_id: localStorage.getItem('drive_client_id'),
+                client_id: clientId,
                 scope: SCOPES,
                 callback: (response) => {
                     if (response.error !== undefined) {
-                        showStatus("認証エラー: " + response.error);
+                        alert("認証エラー: " + response.error);
                         return;
                     }
                     accessToken = response.access_token;
-                    showUploadInterface();
+                    document.getElementById('setup-section').classList.add('hidden');
+                    document.getElementById('upload-section').classList.remove('hidden');
+                    document.getElementById('status-area').textContent = "準備完了";
                 },
             });
-
-            // 既存のトークンがないか、期限切れの場合はリクエスト
             tokenClient.requestAccessToken({prompt: 'consent'});
-        }
+        };
 
-        function showUploadInterface() {
-            setupSection.classList.add('hidden');
-            uploadSection.classList.remove('hidden');
-            showStatus("準備完了。写真を撮影してください。");
-        }
-
-        function showStatus(msg) {
-            statusArea.textContent = msg;
-        }
-
-        fileInput.onchange = (e) => {
+        document.getElementById('file-input').onchange = (e) => {
             const file = e.target.files[0];
             if (file) uploadFile(file);
         };
 
         async function uploadFile(file) {
             const folderId = localStorage.getItem('drive_folder_id');
-            showStatus("アップロードを開始します...");
+            const statusArea = document.getElementById('status-area');
+            const progressBar = document.getElementById('progress-bar');
+            const progressContainer = document.getElementById('progress-container');
+
+            statusArea.textContent = "アップロード中...";
             progressContainer.classList.remove('hidden');
             progressBar.style.width = '10%';
 
-            // Preview
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                previewImg.src = e.target.result;
-                previewContainer.classList.remove('hidden');
-            };
-            reader.readAsDataURL(file);
-
             const metadata = {
-                name: `iPhone_${new Date().toISOString().replace(/[:.]/g, '-')}.jpg`,
+                name: `iPhone_${new Date().getTime()}.jpg`,
                 mimeType: 'image/jpeg',
                 parents: [folderId]
             };
@@ -200,21 +150,18 @@
 
                 if (response.ok) {
                     progressBar.style.width = '100%';
-                    showStatus("保存完了しました！");
+                    statusArea.textContent = "保存完了！";
                     setTimeout(() => {
                         progressContainer.classList.add('hidden');
-                        previewContainer.classList.add('hidden');
-                        showStatus("次の写真を撮ることができます");
+                        statusArea.textContent = "次の撮影が可能です";
                     }, 3000);
                 } else {
-                    const errData = await response.json();
-                    throw new Error(errData.error.message || "アップロード失敗");
+                    const data = await response.json();
+                    throw new Error(data.error.message);
                 }
             } catch (err) {
-                showStatus("エラー: " + err.message);
+                statusArea.textContent = "エラー: " + err.message;
                 console.error(err);
-                // トークン切れの可能性があるため再認証を促す
-                if(err.message.includes("auth")) accessToken = null;
             }
         }
 
