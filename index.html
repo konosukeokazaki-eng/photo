@@ -3,88 +3,88 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Drive Photo Uploader</title>
+    <title>Drive Photo Uploader - Rapid Mode</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="https://apis.google.com/js/api.js" async defer></script>
     <style>
         body { background: #f3f4f6; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
         .btn-primary { @apply w-full bg-blue-600 text-white font-bold py-4 rounded-2xl hover:bg-blue-700 transition shadow-lg active:scale-95 text-lg; }
+        .upload-card { @apply bg-white rounded-[2rem] shadow-2xl overflow-hidden mt-8 border border-gray-100; }
+        @keyframes pulse-soft { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        .uploading { animation: pulse-soft 2s infinite; }
     </style>
 </head>
 <body class="min-h-screen flex flex-col items-center p-4">
 
-    <div class="w-full max-w-md bg-white rounded-[2rem] shadow-2xl overflow-hidden mt-8 border border-gray-100">
+    <div class="w-full max-w-md upload-card">
         <div class="bg-blue-600 p-8 text-white text-center">
-            <h1 class="text-2xl font-black tracking-tight">Photo to Drive</h1>
-            <p class="text-xs mt-1 opacity-90 font-medium">Googleドライブへ直接アップロード</p>
+            <h1 class="text-2xl font-black tracking-tight italic">RAPID UPLOADER</h1>
+            <p class="text-xs mt-1 opacity-90 font-medium">連続撮影・バックグラウンド保存モード</p>
         </div>
 
         <div class="p-8 space-y-6">
             <!-- 認証前のセクション -->
             <div id="setup-section" class="space-y-6 text-center">
-                <div class="p-4 bg-blue-50 border border-blue-100 rounded-2xl text-[12px] text-blue-800 leading-relaxed text-left">
-                    <p class="font-bold mb-2">💡 権限画面でチェックが出ない場合：</p>
-                    <p>画面内の<strong>「...が一部のアクセス権限を付与されている 3 件のサービスを確認します」</strong>という青い文字をクリックして中身を広げてください。そこにチェックボックスが現れます。</p>
+                <div class="p-4 bg-yellow-50 border border-yellow-100 rounded-2xl text-[12px] text-yellow-800 text-left">
+                    <p class="font-bold mb-2">📸 連続撮影のコツ：</p>
+                    <p>写真を撮った直後に次の撮影が可能です。保存は裏側で順番に行われます。認証時に「Googleドライブのすべてのファイル...」のチェックを忘れずに入れてください。</p>
                 </div>
-
-                <button id="save-auth-btn" class="btn-primary">
-                    Googleでログインして開始
-                </button>
+                <button id="save-auth-btn" class="btn-primary">Googleでログインして開始</button>
             </div>
 
             <!-- アップロードセクション -->
-            <div id="upload-section" class="hidden space-y-8 text-center">
-                <div class="space-y-2">
-                    <div id="status-badge" class="inline-block px-3 py-1 rounded-full bg-green-100 text-green-700 text-[10px] font-bold uppercase tracking-wider">Connected</div>
-                    <div id="status-area" class="text-sm font-bold text-gray-700">写真を撮影してください</div>
+            <div id="upload-section" class="hidden space-y-6 text-center">
+                <div class="flex justify-between items-center px-2">
+                    <div id="status-badge" class="px-3 py-1 rounded-full bg-green-100 text-green-700 text-[10px] font-bold uppercase tracking-wider">Connected</div>
+                    <div id="queue-counter" class="text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-full">待機中: 0件</div>
                 </div>
+
+                <div id="status-area" class="text-sm font-bold text-gray-700 h-6">写真をバシャバシャ撮ってください</div>
 
                 <div class="relative group">
                     <div class="absolute -inset-1 bg-gradient-to-r from-blue-600 to-cyan-500 rounded-2xl blur opacity-25 group-hover:opacity-50 transition duration-1000"></div>
-                    <label class="relative flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-2xl p-12 bg-white cursor-pointer hover:border-blue-400 transition-colors">
-                        <div class="bg-blue-50 p-4 rounded-full mb-4">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <label class="relative flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-2xl p-12 bg-white cursor-pointer hover:border-blue-400 transition-all">
+                        <div class="bg-blue-50 p-6 rounded-full mb-4 group-active:scale-90 transition-transform">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812-1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                             </svg>
                         </div>
-                        <span class="text-blue-700 font-bold">カメラを起動</span>
-                        <input type="file" id="file-input" accept="image/*" capture="environment" class="hidden">
+                        <span class="text-blue-700 font-black text-xl">撮影する</span>
+                        <input type="file" id="file-input" accept="image/*" capture="environment" class="hidden" multiple>
                     </label>
                 </div>
 
-                <div id="progress-container" class="hidden space-y-2">
-                    <div class="w-full bg-gray-100 rounded-full h-3 overflow-hidden">
-                        <div id="progress-bar" class="bg-blue-600 h-full w-0 transition-all duration-300"></div>
-                    </div>
-                    <p class="text-[10px] text-gray-400 font-mono">UPLOADING TO DRIVE...</p>
+                <div id="upload-list" class="space-y-2 max-h-40 overflow-y-auto pr-2">
+                    <!-- アップロード中のアイテムがここに並ぶ -->
                 </div>
 
-                <button id="logout-btn" class="text-xs text-gray-400 hover:text-gray-600 underline">別の条件でやり直す</button>
+                <button id="logout-btn" class="text-xs text-gray-400 hover:text-gray-600 underline">ログアウト</button>
             </div>
         </div>
     </div>
 
     <script>
+        // 指定された情報を反映
         const CONFIG = {
             apiKey: 'AIzaSyBBnd9ZGwjQU75fbFzFZ-Yv3i6bGJ0tlZA', 
             clientId: '810333821807-h2qpjf2radfb0gk5g1uejsl8fhuo7g2k.apps.googleusercontent.com',
-            folderId: '1Khwa4qi8oOLiDDtn2MruuyoPIEwI4bMr' // 指定されたフォルダ
+            folderId: '1Khwa4qi8oOLiDDtn2MruuyoPIEwI4bMr'
         };
 
         let accessToken = null;
-        let tokenClient;
-        const SCOPES = 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive';
+        let uploadQueue = [];
+        let isUploading = false;
+        let fileCount = 0;
 
-        // GAPIの初期化
         async function initGapi() {
             try {
                 await gapi.client.init({
                     apiKey: CONFIG.apiKey,
                     discoveryDocs: ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"],
                 });
-            } catch (e) { console.error("Init Error", e); }
+            } catch (e) { console.error("GAPI Init Error", e); }
         }
 
         const loader = setInterval(() => {
@@ -95,10 +95,10 @@
         }, 500);
 
         document.getElementById('save-auth-btn').onclick = () => {
-            tokenClient = google.accounts.oauth2.initTokenClient({
+            const tokenClient = google.accounts.oauth2.initTokenClient({
                 client_id: CONFIG.clientId,
-                scope: SCOPES,
-                prompt: 'consent', // これにより「サービスを確認します」画面が必ず出ます
+                scope: 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive',
+                prompt: 'consent',
                 callback: (tokenResponse) => {
                     if (tokenResponse.error) return;
                     accessToken = tokenResponse.access_token;
@@ -110,31 +110,67 @@
         };
 
         document.getElementById('file-input').onchange = (e) => {
-            const file = e.target.files[0];
-            if (file) startUpload(file);
+            const files = Array.from(e.target.files);
+            files.forEach(file => {
+                fileCount++;
+                const uploadId = Date.now() + '_' + fileCount;
+                uploadQueue.push({ id: uploadId, file: file });
+                addToListUI(uploadId, file.name);
+            });
+            updateQueueCount();
+            processQueue();
+            e.target.value = '';
         };
 
-        async function startUpload(file) {
-            const statusArea = document.getElementById('status-area');
-            const progressBar = document.getElementById('progress-bar');
-            const progressContainer = document.getElementById('progress-container');
+        function addToListUI(id, name) {
+            const list = document.getElementById('upload-list');
+            const item = document.createElement('div');
+            item.id = `item-${id}`;
+            item.className = "flex justify-between items-center bg-gray-50 p-2 rounded-lg text-[10px] border border-gray-100 uploading";
+            item.innerHTML = `
+                <span class="truncate w-32 font-mono text-gray-500">${name}</span>
+                <span class="status-text text-blue-600 font-bold">待機中...</span>
+            `;
+            list.prepend(item);
+        }
 
-            statusArea.textContent = "送信中...";
-            progressContainer.classList.remove('hidden');
-            progressBar.style.width = '30%';
+        function updateQueueCount() {
+            document.getElementById('queue-counter').textContent = `待機中: ${uploadQueue.length}件`;
+        }
 
-            // フォルダIDが有効かまず試す。ダメならマイドライブ直下に保存
-            let targetFolder = CONFIG.folderId;
-            
+        async function processQueue() {
+            if (isUploading || uploadQueue.length === 0) return;
+
+            isUploading = true;
+            const current = uploadQueue.shift();
+            updateQueueCount();
+
+            const itemUI = document.getElementById(`item-${current.id}`);
+            if (itemUI) {
+                itemUI.querySelector('.status-text').textContent = "送信中...";
+                itemUI.classList.add('bg-blue-50');
+            }
+
+            // ファイル名の自動生成 (SNAP_年月日時分秒_連番.jpg)
+            const now = new Date();
+            const timestamp = now.getFullYear() +
+                ('0' + (now.getMonth() + 1)).slice(-2) +
+                ('0' + now.getDate()).slice(-2) + '_' +
+                ('0' + now.getHours()).slice(-2) +
+                ('0' + now.getMinutes()).slice(-2) +
+                ('0' + now.getSeconds()).slice(-2);
+            const randomSuffix = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+            const fileName = `SNAP_${timestamp}_${randomSuffix}.jpg`;
+
             const metadata = {
-                name: `Capture_${new Date().toLocaleString('ja-JP').replace(/\//g, '-')}.jpg`,
+                name: fileName,
                 mimeType: 'image/jpeg',
-                parents: [targetFolder]
+                parents: [CONFIG.folderId]
             };
 
             const form = new FormData();
             form.append('metadata', new Blob([JSON.stringify(metadata)], {type: 'application/json'}));
-            form.append('file', file);
+            form.append('file', current.file);
 
             try {
                 const response = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
@@ -144,31 +180,29 @@
                 });
 
                 if (response.ok) {
-                    progressBar.style.width = '100%';
-                    statusArea.innerHTML = "<span class='text-green-600'>ドライブに保存しました</span>";
-                    setTimeout(() => {
-                        progressContainer.classList.add('hidden');
-                        progressBar.style.width = '0%';
-                        statusArea.textContent = "写真を撮影してください";
-                    }, 3000);
-                } else {
-                    const errorJson = await response.json();
-                    // もしフォルダが見つからないエラー(404)なら、親指定なしで再試行
-                    if (response.status === 404) {
-                        statusArea.textContent = "フォルダが見つからないため直下に保存します...";
-                        delete metadata.parents;
-                        // 以下、再送処理（省略せず実装が必要な場合は追加可能）
+                    if (itemUI) {
+                        itemUI.querySelector('.status-text').textContent = "完了";
+                        itemUI.querySelector('.status-text').className = "text-green-600 font-bold";
+                        itemUI.classList.remove('uploading', 'bg-blue-50');
+                        setTimeout(() => itemUI.remove(), 2000);
                     }
-                    statusArea.textContent = "エラー: " + errorJson.error.message;
+                } else {
+                    const errInfo = await response.json();
+                    if (itemUI) {
+                        itemUI.querySelector('.status-text').textContent = "失敗";
+                        itemUI.querySelector('.status-text').className = "text-red-600 font-bold";
+                        console.error("Upload failed", errInfo);
+                    }
                 }
             } catch (err) {
-                statusArea.textContent = "通信に失敗しました";
+                if (itemUI) itemUI.querySelector('.status-text').textContent = "エラー";
             }
+
+            isUploading = false;
+            processQueue(); 
         }
 
         document.getElementById('logout-btn').onclick = () => location.reload();
     </script>
 </body>
 </html>
-
-
