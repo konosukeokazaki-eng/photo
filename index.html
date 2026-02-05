@@ -23,12 +23,10 @@
         <div class="p-6 space-y-6">
             <div id="setup-section" class="space-y-4">
                 <div class="p-4 bg-blue-50 border border-blue-100 rounded-xl text-[11px] text-blue-800 leading-relaxed">
-                    <p class="font-bold mb-1 underline">File Not Found エラーの場合:</p>
-                    <ol class="list-decimal ml-4 space-y-1">
-                        <li>フォルダIDが <code class="bg-white px-1 border rounded text-red-600">19ebGiUvNB5m2R-HJyGElFLXFALeJNbrN</code> だけであることを確認。</li>
-                        <li>ログインするアカウントが、そのフォルダの編集権限を持っているか確認。</li>
-                        <li>認証時に表示されるチェックボックス（Googleドライブへのアクセス許可）をすべてオンにしてください。</li>
-                    </ol>
+                    <p class="font-bold mb-1 underline">重要：フォルダIDの入力について</p>
+                    <p class="mb-2">ご提示のURLから抽出した正しいIDは以下です：</p>
+                    <code class="block bg-white p-2 border rounded text-red-600 font-mono text-center mb-2 select-all">19ebGiUvNB5m2R-HJyGElFLXFALeJNbrN</code>
+                    <p class="text-[10px] text-gray-500">※URL全体ではなく、上記の英数字のみを「保存先フォルダID」欄に貼り付けてください。</p>
                 </div>
                 <input type="password" id="api-key" placeholder="API Key" class="w-full p-3 border rounded-lg text-sm">
                 <input type="text" id="client-id" placeholder="Client ID" class="w-full p-3 border rounded-lg text-sm">
@@ -64,7 +62,6 @@
     <script>
         let accessToken = null;
         let tokenClient;
-        // スコープをより確実なものに変更
         const SCOPES = 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.install';
 
         window.onload = () => {
