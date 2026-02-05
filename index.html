@@ -21,21 +21,24 @@
         </div>
 
         <div class="p-6 space-y-6">
-            <div id="setup-section" class="space-y-4">
-                <div class="p-4 bg-blue-50 border border-blue-100 rounded-xl text-[11px] text-blue-800 leading-relaxed">
-                    <p class="font-bold mb-1 underline">重要：フォルダIDの入力について</p>
-                    <p class="mb-2">ご提示のURLから抽出した正しいIDは以下です：</p>
-                    <code class="block bg-white p-2 border rounded text-red-600 font-mono text-center mb-2 select-all">19ebGiUvNB5m2R-HJyGElFLXFALeJNbrN</code>
-                    <p class="text-[10px] text-gray-500">※URL全体ではなく、上記の英数字のみを「保存先フォルダID」欄に貼り付けてください。</p>
+            <!-- 認証前のセクション -->
+            <div id="setup-section" class="space-y-4 text-center">
+                <div id="config-warning" class="hidden p-4 bg-red-50 border border-red-100 rounded-xl text-[12px] text-red-800 leading-relaxed">
+                    <p class="font-bold mb-1">エラー：設定が不完全です</p>
+                    <p>コード内の <strong>CONFIG</strong> 部分に正しいAPIキーとクライアントIDを記入してください。</p>
                 </div>
-                <input type="password" id="api-key" placeholder="API Key" class="w-full p-3 border rounded-lg text-sm">
-                <input type="text" id="client-id" placeholder="Client ID" class="w-full p-3 border rounded-lg text-sm">
-                <input type="text" id="folder-id" placeholder="保存先フォルダID" class="w-full p-3 border rounded-lg text-sm">
+                
+                <div id="config-ready" class="p-4 bg-green-50 border border-green-100 rounded-xl text-[12px] text-green-800 leading-relaxed">
+                    <p class="font-bold mb-1">設定済み：</p>
+                    <p>APIキー等の情報はコード内に保存されています。<br>下のボタンを押して認証を開始してください。</p>
+                </div>
+
                 <button id="save-auth-btn" class="btn-primary">
-                    設定を保存して認証
+                    Googleアカウントで認証
                 </button>
             </div>
 
+            <!-- アップロードセクション -->
             <div id="upload-section" class="hidden space-y-6 text-center">
                 <div class="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-2xl p-8 bg-gray-50">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-gray-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -54,50 +57,62 @@
                 <div id="preview-container" class="hidden flex justify-center mt-4">
                     <img id="preview-img" class="h-48 rounded-xl shadow-lg border-2 border-white">
                 </div>
-                <button id="logout-btn" class="text-xs text-gray-400 underline">設定をリセット</button>
+                <button id="logout-btn" class="text-xs text-gray-400 underline mt-4">認証を解除</button>
             </div>
         </div>
     </div>
 
     <script>
+        /**
+         * 重要: 以下の値をご自身の Google Cloud プロジェクトの値に書き換えてください。
+         * 引用符 (' ') の間に正確な値を貼り付けてください。
+         */
+        const CONFIG = {
+            apiKey: 'AIzaSyBBnd9ZGwjQU75fbFzFZ-Yv3i6bGJ0tlZA', 
+            clientId: '810333821807-h2qpjf2radfb0gk5g1uejsl8fhuo7g2k.apps.googleusercontent.com',
+            folderId: '19ebGiUvNB5m2R-HJyGElFLXFALeJNbrN'
+        };
+
         let accessToken = null;
         let tokenClient;
         const SCOPES = 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.install';
 
+        // 初期チェック
         window.onload = () => {
-            document.getElementById('api-key').value = localStorage.getItem('drive_api_key') || '';
-            document.getElementById('client-id').value = localStorage.getItem('drive_client_id') || '';
-            document.getElementById('folder-id').value = localStorage.getItem('drive_folder_id') || '';
-            
-            const checkLibs = setInterval(() => {
-                if (typeof gapi !== 'undefined' && typeof google !== 'undefined') {
-                    clearInterval(checkLibs);
-                    gapi.load('client', async () => {
-                        await gapi.client.init({
-                            apiKey: localStorage.getItem('drive_api_key'),
-                            discoveryDocs: ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"],
-                        });
-                    });
-                }
-            }, 500);
+            if (CONFIG.apiKey.includes('YOUR_API_KEY') || CONFIG.clientId.includes('YOUR_CLIENT_ID')) {
+                document.getElementById('config-warning').classList.remove('hidden');
+                document.getElementById('config-ready').classList.add('hidden');
+            }
         };
 
-        document.getElementById('save-auth-btn').onclick = () => {
-            const apiKey = document.getElementById('api-key').value.trim();
-            const clientId = document.getElementById('client-id').value.trim();
-            const folderId = document.getElementById('folder-id').value.trim();
+        // GAPIライブラリの初期化
+        async function initializeGapiClient() {
+            try {
+                await gapi.client.init({
+                    apiKey: CONFIG.apiKey,
+                    discoveryDocs: ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"],
+                });
+            } catch (err) {
+                console.error("GAPI init error:", err);
+                document.getElementById('status-area').textContent = "初期化エラー: APIキーを確認してください。";
+            }
+        }
 
-            if (!apiKey || !clientId || !folderId) {
-                alert("すべての項目を入力してください");
+        const checkLibs = setInterval(() => {
+            if (typeof gapi !== 'undefined' && typeof google !== 'undefined') {
+                clearInterval(checkLibs);
+                gapi.load('client', initializeGapiClient);
+            }
+        }, 500);
+
+        document.getElementById('save-auth-btn').onclick = () => {
+            if (CONFIG.apiKey.includes('YOUR_API_KEY') || CONFIG.clientId.includes('YOUR_CLIENT_ID')) {
+                alert("コード内の CONFIG 部分に正しいAPIキーとクライアントIDを記入してください。");
                 return;
             }
 
-            localStorage.setItem('drive_api_key', apiKey);
-            localStorage.setItem('drive_client_id', clientId);
-            localStorage.setItem('drive_folder_id', folderId);
-
             tokenClient = google.accounts.oauth2.initTokenClient({
-                client_id: clientId,
+                client_id: CONFIG.clientId,
                 scope: SCOPES,
                 callback: (response) => {
                     if (response.error !== undefined) {
@@ -119,7 +134,11 @@
         };
 
         async function uploadFile(file) {
-            const folderId = localStorage.getItem('drive_folder_id');
+            if (!accessToken) {
+                alert("認証が切れています。再読み込みしてください。");
+                return;
+            }
+
             const statusArea = document.getElementById('status-area');
             const progressBar = document.getElementById('progress-bar');
             const progressContainer = document.getElementById('progress-container');
@@ -131,7 +150,7 @@
             const metadata = {
                 name: `iPhone_${new Date().getTime()}.jpg`,
                 mimeType: 'image/jpeg',
-                parents: [folderId]
+                parents: [CONFIG.folderId]
             };
 
             const form = new FormData();
@@ -159,11 +178,14 @@
             } catch (err) {
                 statusArea.textContent = "エラー: " + err.message;
                 console.error(err);
+                if (err.message.includes("API key not valid")) {
+                    alert("APIキーが無効です。Google Cloud Consoleで作成した「APIキー」が正しく入力されているか確認してください。");
+                }
             }
         }
 
         document.getElementById('logout-btn').onclick = () => {
-            localStorage.clear();
+            accessToken = null;
             location.reload();
         };
     </script>
